@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LAB-S07 - CRUD Productos</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+    .container { max-width: 1000px; margin: 0 auto; }
+    .card { background: white; border-radius: 10px; padding: 30px; margin-bottom: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+    h1, h2 { color: #333; margin-bottom: 20px; text-align: center; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; color: #555; font-weight: 600; }
+    input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+    button { background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; margin-top: 10px; }
+    button:hover { background: #5568d3; }
+    .btn-danger { background: #e74c3c; }
+    .btn-danger:hover { background: #c0392b; }
+    .btn-warning { background: #f39c12; }
+    .btn-warning:hover { background: #d68910; }
+    .hidden { display: none; }
+    .error { color: #e74c3c; text-align: center; margin: 10px 0; }
+    .success { color: #27ae60; text-align: center; margin: 10px 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #667eea; color: white; }
+    tr:hover { background: #f5f5f5; }
+    .actions { display: flex; gap: 5px; }
+    .actions button { width: auto; padding: 6px 12px; margin: 0; }
+    .header { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+    .header h1 { color: #667eea; margin: 0; }
+    .user-info { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🛒 LAB-S07 - CRUD PRODUCTOS</h1>
+      <p>Sistema de Gestión de Productos con AWS</p>
+    </div>
+
+    <!-- LOGIN / REGISTER -->
+    <div id="authSection" class="card">
+      <h2 id="authTitle">🔐 Iniciar Sesión</h2>
+      <div class="form-group">
+        <label>Usuario:</label>
+        <input type="text" id="username" placeholder="Ingresa tu usuario">
+      </div>
+      <div class="form-group">
+        <label>Contraseña:</label>
+        <input type="password" id="password" placeholder="Ingresa tu contraseña">
+      </div>
+      <div id="authMessage"></div>
+      <button onclick="login()" id="btnLogin">Ingresar</button>
+      <button onclick="register()" id="btnRegister" style="background: #27ae60; margin-top: 10px;">Registrarse</button>
+      <p style="text-align: center; margin-top: 15px;">
+        <a href="#" onclick="toggleAuth()" id="toggleAuthText">¿No tienes cuenta? Regístrate</a>
+      </p>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboardSection" class="hidden">
+      <div class="user-info">
+        <span>👤 <strong id="currentUser"></strong></span>
+        <button onclick="logout()" style="width: auto; padding: 8px 16px; background: #e74c3c; margin: 0;">Cerrar Sesión</button>
+      </div>
+
+      <!-- FORMULARIO DE PRODUCTOS -->
+      <div class="card">
+        <h2 id="formTitle">➕ Nuevo Producto</h2>
+        <input type="hidden" id="productId">
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Nombre:</label>
+            <input type="text" id="prodName" placeholder="Nombre del producto">
+          </div>
+          <div class="form-group">
+            <label>Categoría:</label>
+            <input type="text" id="prodCategory" placeholder="Ej: Electrónica, Ropa...">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Precio (S/):</label>
+            <input type="number" id="prodPrice" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Stock:</label>
+            <input type="number" id="prodStock" placeholder="0" min="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descripción:</label>
+          <textarea id="prodDescription" rows="3" placeholder="Descripción del producto"></textarea>
+        </div>
+        <div id="prodMessage"></div>
+        <button onclick="saveProduct()" id="btnSave">Guardar Producto</button>
+        <button onclick="clearForm()" class="btn-warning" id="btnCancel" style="display: none;">Cancelar Edición</button>
+      </div>
+
+      <!-- LISTA DE PRODUCTOS -->
+      <div class="card">
+        <h2>📦 Lista de Productos</h2>
+        <button onclick="loadProducts()" style="margin-bottom: 15px; background: #3498db;">🔄 Actualizar</button>
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="productTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin + '/api';
+    let token = localStorage.getItem('token');
+    let isLoginMode = true;
+
+    // Verificar si hay sesión
+    if (token) {
+      showDashboard();
+    }
+
+    function toggleAuth() {
+      isLoginMode = !isLoginMode;
+      document.getElementById('authTitle').textContent = isLoginMode ? '🔐 Iniciar Sesión' : '📝 Registrarse';
+      document.getElementById('btnLogin').style.display = isLoginMode ? 'block' : 'none';
+      document.getElementById('btnRegister').style.display = isLoginMode ? 'none' : 'block';
+      document.getElementById('toggleAuthText').textContent = isLoginMode ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión';
+      document.getElementById('authMessage').innerHTML = '';
+    }
+
+    async function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          token = data.token;
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', data.user.username);
+          showDashboard();
+        } else {
+          document.getElementById('authMessage').innerHTML = `<p class="error">${data.message}</p>`;
+        }
+      } catch (error) {
+        document.getElementById('authMessage').innerHTML = `<p class="error">Error de conexión</p>`;
+      }
+    }
+
+    async function register() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const res = await fetch(`${API}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('authMessage').innerHTML = `<p class="success">${data.message}. Ahora inicia sesión.</p>`;
+          setTimeout(() => toggleAuth(), 1500);
+        } else {
+          document.getElementById('authMessage').innerHTML = `<p class="error">${data.message}</p>`;
+        }
+      } catch (error) {
+        document.getElementById('authMessage').innerHTML = `<p class="error">Error de conexión</p>`;
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('dashboardSection').classList.remove('hidden');
+      document.getElementById('currentUser').textContent = localStorage.getItem('user');
+      loadProducts();
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      token = null;
+      document.getElementById('authSection').classList.remove('hidden');
+      document.getElementById('dashboardSection').classList.add('hidden');
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+    }
+
+    async function loadProducts() {
+      try {
+        const res = await fetch(`${API}/items`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          const tbody = document.getElementById('productTable');
+          tbody.innerHTML = data.data.map(p => `
+            <tr>
+              <td>${p.name}</td>
+              <td>${p.category}</td>
+              <td>S/ ${p.price.toFixed(2)}</td>
+              <td>${p.stock}</td>
+              <td class="actions">
+                <button class="btn-warning" onclick="editProduct('${p._id}', '${p.name}', '${p.category}', ${p.price}, ${p.stock}, '${p.description}')">✏️</button>
+                <button class="btn-danger" onclick="deleteProduct('${p._id}')">🗑️</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    async function saveProduct() {
+      const id = document.getElementById('productId').value;
+      const name = document.getElementById('prodName').value;
+      const category = document.getElementById('prodCategory').value;
+      const price = parseFloat(document.getElementById('prodPrice').value);
+      const stock = parseInt(document.getElementById('prodStock').value);
+      const description = document.getElementById('prodDescription').value;
+
+      if (!name || !category || !price || !description) {
+        document.getElementById('prodMessage').innerHTML = '<p class="error">Completa todos los campos obligatorios</p>';
+        return;
+      }
+
+      try {
+        const url = id ? `${API}/items/${id}` : `${API}/items`;
+        const method = id ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+          method,
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, category, price, stock, description })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          document.getElementById('prodMessage').innerHTML = `<p class="success">${data.message}</p>`;
+          clearForm();
+          loadProducts();
+        }
+      } catch (error) {
+        document.getElementById('prodMessage').innerHTML = '<p class="error">Error al guardar</p>';
+      }
+    }
+
+    function editProduct(id, name, category, price, stock, description) {
+      document.getElementById('productId').value = id;
+      document.getElementById('prodName').value = name;
+      document.getElementById('prodCategory').value = category;
+      document.getElementById('prodPrice').value = price;
+      document.getElementById('prodStock').value = stock;
+      document.getElementById('prodDescription').value = description;
+      
+      document.getElementById('formTitle').textContent = '✏️ Editar Producto';
+      document.getElementById('btnSave').textContent = 'Actualizar Producto';
+      document.getElementById('btnCancel').style.display = 'block';
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm('¿Estás seguro de eliminar este producto?')) return;
+      
+      try {
+        const res = await fetch(`${API}/items/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          loadProducts();
+        }
+      } catch (error) {
+        alert('Error al eliminar');
+      }
+    }
+
+    function clearForm() {
+      document.getElementById('productId').value = '';
+      document.getElementById('prodName').value = '';
+      document.getElementById('prodCategory').value = '';
+      document.getElementById('prodPrice').value = '';
+      document.getElementById('prodStock').value = '';
+      document.getElementById('prodDescription').value = '';
+      document.getElementById('prodMessage').innerHTML = '';
+      document.getElementById('formTitle').textContent = '➕ Nuevo Producto';
+      document.getElementById('btnSave').textContent = 'Guardar Producto';
+      document.getElementById('btnCancel').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
