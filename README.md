@@ -319,7 +319,7 @@ pm2 reload lab-s07          # zero-downtime restart
 
 ## 📸 Capturas del Proyecto
 
-> _Agrega aquí las capturas del despliegue:_
+> _Agrega aquí :_
 
 - [ ] Pantalla de Login
 - [ ] CRUD de Productos
